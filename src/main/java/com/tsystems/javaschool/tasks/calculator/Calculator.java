@@ -2,6 +2,7 @@ package com.tsystems.javaschool.tasks.calculator;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Stack;
 import java.util.StringTokenizer;
 
 public class Calculator {
@@ -20,7 +21,9 @@ public class Calculator {
      */
     public String evaluate(String statement) {
         try {
-            expressionParser(statement);
+            List<String> expression = expressionParser(statement);
+            Stack<Double> numbers = new Stack<>();
+            Stack<String> operators = new Stack<>();
             // todo All calculations here
             int result = 0;
             return Integer.toString(result);
@@ -33,7 +36,7 @@ public class Calculator {
     private List<String> expressionParser(String exprString) throws NullPointerException, ArithmeticException {
         List<String> expression = new ArrayList<>();
 
-        exprString = exprString.replaceAll(" ", "");
+        //exprString = exprString.replaceAll(" ", "");
         StringTokenizer st = new StringTokenizer(exprString, OPERATORS + OPEN_BRACKET + CLOSE_BRACKET, true);
         String prevToken = "start";
         int bracketBalance = 0;
@@ -41,13 +44,11 @@ public class Calculator {
             String token = st.nextToken();
             
             if (OPERATORS.contains(token) && prevToken.equals("start")) {
-                throw new ArithmeticException("Expression cannot start with operator");
+                throw new ArithmeticException("Expression cannot start with operator(except -nubers)");
             }
             if (OPERATORS.contains(token) && OPERATORS.contains(prevToken)) {
                 throw new ArithmeticException("Expression cannot have two operators in a row.");
             }
-            
-            //bracket balance
             if (token.equals(OPEN_BRACKET)) {
                 bracketBalance++;
             }
@@ -70,10 +71,27 @@ public class Calculator {
         return expression;
     }
     
-    private boolean isNumber() {
-        //todo
-        return false;
+    private boolean isNumeric(String str) throws ArithmeticException {
+        if (OPERATORS.contains(str) || str.equals(OPEN_BRACKET) || str.equals(CLOSE_BRACKET)) {
+            return false;
+        }
+        try {
+            double d = Double.parseDouble(str);
+        } catch (NumberFormatException nfe) {
+            throw new ArithmeticException("Wrong number format.");
+        } catch (NullPointerException nfe) {
+            return false;
+        }
+        return true;
     }
     
-    
+    private int operPriority(String str) {
+        if (str.equals("-") || str.equals("+")) {
+            return 1;
+        }
+        if (str.equals("*") || str.equals("/")) {
+            return 2;
+        }
+        return 0; //
+    }
 }
