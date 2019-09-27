@@ -1,5 +1,7 @@
 package com.tsystems.javaschool.tasks.calculator;
 
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Stack;
@@ -10,6 +12,7 @@ public class Calculator {
     private final String OPERATORS = "+-*/";
     private final String OPEN_BRACKET = "(";
     private final String CLOSE_BRACKET = ")";
+
     
     /**
      * Evaluate statement represented as string.
@@ -24,11 +27,47 @@ public class Calculator {
             List<String> expression = expressionParser(statement);
             Stack<Double> numbers = new Stack<>();
             Stack<String> operators = new Stack<>();
-            // todo All calculations here
-            int result = 0;
-            return Integer.toString(result);
-        } catch (NullPointerException | ArithmeticException e) {
-            //some error logging
+
+			for (int i = 0; i < expression.size(); i++) {
+				String s = expression.get(i);
+				if (isNumeric(s)) {
+					numbers.push(Double.parseDouble(s));
+				} else if (s.equals(OPEN_BRACKET)) {
+					operators.push(s);
+				} else if (s.equals(CLOSE_BRACKET)) {
+					// calculate all inside brackets pair
+					while (!operators.peek().equals(OPEN_BRACKET)) {
+						double b = numbers.pop();
+						double a = numbers.pop();
+						String operator = operators.pop();
+						numbers.push(evaluatePair(a, b, operator));
+					}
+					operators.pop();
+				} else if (OPERATORS.contains(s)){
+					while (operators.size() > 0 && operPriority(s) <= operPriority(operators.peek())) {
+						double b = numbers.pop();
+						double a = numbers.pop();
+						String operator = operators.pop();
+						numbers.push(evaluatePair(a, b, operator));
+					}
+					operators.push(s);
+				}
+			}
+			while (!operators.isEmpty()) {
+				double b = numbers.pop();
+				double a = numbers.pop();
+				String operator = operators.pop();
+				numbers.push(evaluatePair(a, b, operator));
+			}
+            double doubleResult = numbers.pop();
+			DecimalFormatSymbols decimalFormatSymbols = new DecimalFormatSymbols();
+			decimalFormatSymbols.setDecimalSeparator('.');
+			DecimalFormat df = new DecimalFormat("#.####", decimalFormatSymbols);
+			//df.getDecimalFormatSymbols();//todo something with 2,3123 output. We need 0.12 like here.
+			String result = df.format(doubleResult);
+            return result;
+        } catch (NullPointerException | ArithmeticException | NumberFormatException e) {
+            //TODO some error logging
             return null;
         }
     }
@@ -36,15 +75,19 @@ public class Calculator {
     private List<String> expressionParser(String exprString) throws NullPointerException, ArithmeticException {
         List<String> expression = new ArrayList<>();
 
-        //exprString = exprString.replaceAll(" ", "");
         StringTokenizer st = new StringTokenizer(exprString, OPERATORS + OPEN_BRACKET + CLOSE_BRACKET, true);
         String prevToken = "start";
         int bracketBalance = 0;
         while (st.hasMoreTokens()) {
             String token = st.nextToken();
-            
-            if (OPERATORS.contains(token) && prevToken.equals("start")) {
-                throw new ArithmeticException("Expression cannot start with operator(except -nubers)");
+
+            // todo else if statements
+            if (OPERATORS.contains(token) && prevToken.equals("start")) { //expression starts with operator
+            	if (token.equals("-")) { //first number is lower than zero
+					expression.add("0");
+				} else {
+               		throw new ArithmeticException("Expression cannot start with operator(except -nubers)");
+				}
             }
             if (OPERATORS.contains(token) && OPERATORS.contains(prevToken)) {
                 throw new ArithmeticException("Expression cannot have two operators in a row.");
@@ -94,4 +137,22 @@ public class Calculator {
         }
         return 0; //
     }
+
+    private double evaluatePair(double a, double b, String oper) {
+		switch (oper) {
+			case "+":
+				return a + b;
+			case "-":
+				return a - b;
+			case "*":
+				return a * b;
+			case "/":
+				if ( b != 0) {
+					return a/ b;
+				} else {
+					throw new ArithmeticException("Divide on zero");
+				}
+		}
+		throw new ArithmeticException("wrong operator");
+	}
 }
